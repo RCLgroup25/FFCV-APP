@@ -38,7 +38,7 @@ def get_team_logos():
         "Cd Contestano": "logos/Cd Contestano.png",
     }
 
-# --- 3. INTERFAZ: SELECTOR DE EQUIPOS (CON KEY ÚNICA E ÍNDICE) ---
+# --- 3. INTERFAZ: SELECTOR DE EQUIPOS ---
 def team_selector(team_logos, cols=4):
     if "equipo_seleccionado" not in st.session_state:
         st.session_state.equipo_seleccionado = None
@@ -55,7 +55,6 @@ def team_selector(team_logos, cols=4):
             except:
                 st.caption(f"📍 {team}")
             
-            # Key única con índice para evitar el error DuplicateElementKey
             if st.button(team, key=f"btn_{team}_{i}", use_container_width=True):
                 st.session_state.equipo_seleccionado = team
                 st.rerun()
@@ -88,16 +87,14 @@ if equipo:
     st.divider()
     st.markdown(f"## 🏟️ {equipo}")
     
-    # Filtrado por equipo
     df_team = df_filtrado[df_filtrado["Equipo"] == equipo].copy()
 
     if df_team.empty:
         st.warning("No hay jugadores que cumplan el filtro de minutos en este equipo.")
     else:
-        # --- TABLA GENERAL DEL EQUIPO (PULIDA) ---
+        # --- TABLA GENERAL DEL EQUIPO ---
         st.markdown("### 📋 Plantel del equipo")
         
-        # Selección de columnas clave
         cols_mostrar = [
             "Jugador", "Posicion_Limpia", "Minutos", "Partidos_Jugados", 
             "Pct_Titularidad_Real", "Goles", "Goles_p90"
@@ -105,16 +102,16 @@ if equipo:
         
         df_display = df_team[cols_mostrar].copy()
         
-        # Formateo de decimales y porcentajes para la vista general
-        df_display["Pct_Titularidad_Real"] = df_display["Pct_Titularidad_Real"].map("{:.1f}%".format)
+        # CORRECCIÓN: Multiplicar por 100 para mostrar porcentaje real
+        df_display["Pct_Titularidad_Real"] = (df_display["Pct_Titularidad_Real"] * 100).map("{:.1f}%".format)
         df_display["Goles_p90"] = df_display["Goles_p90"].map("{:.2f}".format)
         
         st.dataframe(df_display.sort_values("Minutos", ascending=False), use_container_width=True)
 
-        # Botón para exportar a Excel (CSV)
+        # Botón para exportar
         csv = df_team.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Descargar Data del Equipo (CSV)",
+            label="📥 Descargar Data del Equipo (Excel/CSV)",
             data=csv,
             file_name=f"RCL_Scout_{equipo}.csv",
             mime='text/csv',
@@ -123,23 +120,24 @@ if equipo:
         # --- ANÁLISIS INDIVIDUAL ---
         st.divider()
         st.markdown("### 👤 Análisis individual")
-        jugador_sel = st.selectbox("Selecciona un jugador para ver su radiografía:", df_team["Jugador"].unique())
+        jugador_sel = st.selectbox("Selecciona un jugador:", df_team["Jugador"].unique())
         
         if jugador_sel:
             df_j = df_team[df_team["Jugador"] == jugador_sel].iloc[0]
-
-            # Bloques de métricas en columnas
             c1, c2 = st.columns(2)
             
             with c1:
                 st.subheader("🧠 Uso y confianza CT")
+                # CORRECCIÓN: Multiplicar por 100 en la ficha individual
+                pct_titular = df_j["Pct_Titularidad_Real"] * 100
+                
                 st.table(pd.DataFrame({
                     "Métrica": ["Convocados", "PJ", "Titular", "% Titularidad Real", "Minutos por Conv."],
                     "Valor": [
                         int(df_j["Convocados"]), 
                         int(df_j["Partidos_Jugados"]), 
                         int(df_j["Partidos_Titular"]), 
-                        f"{df_j['Pct_Titularidad_Real']:.1f}%", 
+                        f"{pct_titular:.1f}%", 
                         f"{df_j['Minutos_por_Convocatoria']:.1f}"
                     ]
                 }))
@@ -181,4 +179,4 @@ if equipo:
 
 # --- FOOTER ---
 st.sidebar.divider()
-st.sidebar.caption("Desarrollado por Diego para RCL Scout Group. Prohibida su reproducción sin autorización.")
+st.sidebar.caption("Desarrollado por Diego para RCL Scout Group © 2026")
