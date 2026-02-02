@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-from utils.load_data import load_df, get_team_logos
-from utils.ui import team_selector
 
 # --- 1. CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="RCL Scout Group - Scouting 2026", layout="wide")
@@ -280,4 +278,5 @@ st.dataframe(pd.DataFrame({
         df_j["Minutos"]
     ]
 }))
+
 
