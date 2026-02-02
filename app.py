@@ -1,8 +1,97 @@
 import streamlit as st
 import pandas as pd
-
+import os
 from utils.load_data import load_df, get_team_logos
 from utils.ui import team_selector
+
+# --- 1. CONFIGURACIÓN DE LA PÁGINA ---
+st.set_page_config(page_title="RCL Scout Group - Scouting 2026", layout="wide")
+
+# --- 2. FUNCIONES DE CARGA (LOAD DATA) ---
+@st.cache_data
+def load_df():
+    """
+    Carga el dataset. 
+    IMPORTANTE: El archivo debe estar en la carpeta 'data' en tu GitHub.
+    """
+    # Cambiamos la ruta de C:\\... a una ruta que entienda la nube
+    # Si el archivo está en la raíz de tu GitHub, deja solo "df.csv"
+    # Si está dentro de una carpeta llamada data, usa "data/df.csv"
+    ruta_nube = "data/df.csv" 
+    
+    if os.path.exists(ruta_nube):
+        return pd.read_csv(ruta_nube)
+    else:
+        # Por si lo subiste suelto a GitHub
+        return pd.read_csv("df.csv")
+
+def get_team_logos():
+    return {
+        "Benferri Cf": "logos/Benferri Cf.png",
+        "Betis Florida": "logos/Betis Florida.png",
+        "Cd El Campello": "logos/Cd El Campello.png",
+        "Cd Montesinos": "logos/Cd Montesinos.png",
+        "Catral Castrum Cf": "logos/Catral Castrum Cf.png",
+        "Muro Cf": "logos/Muro Cf.png",
+        "Santa Pola Cf": "logos/Santa Pola Cf.png",
+        "Teulada Moraira": "logos/Teulada Moraira.png",
+        "Atletico Algorfa": "logos/Atletico Algorfa.png",
+        "Villena Cf": "logos/Villena Cf.png",
+        "Cd Almoradi": "logos/Cd Almoradi.png",
+        "Novelda Cf": "logos/Novelda Cf.png",
+        "Cd Murada": "logos/Cd Murada.png",
+        "Atletico Jonense": "logos/Atletico Jonense.png",
+        "Callosa Deportiva": "logos/Callosa Deportiva.png",
+        "Cd Contestano": "logos/Cd Contestano.png",
+    }
+
+# --- 3. FUNCIONES DE INTERFAZ (UI) ---
+def team_selector(team_logos, cols=6):
+    if "equipo_seleccionado" not in st.session_state:
+        st.session_state.equipo_seleccionado = None
+
+    st.markdown("### 🏟️ Selecciona un equipo")
+
+    teams = list(team_logos.keys())
+    rows = [teams[i:i + cols] for i in range(0, len(teams), cols)]
+
+    for row in rows:
+        columns = st.columns(cols)
+        for col, team in zip(columns, row):
+            with col:
+                # Intentar cargar imagen, si no existe no rompe la app
+                try:
+                    st.image(team_logos[team], use_container_width=True)
+                except:
+                    st.warning(f"Sin logo: {team}")
+
+                if st.button(team, key=f"btn_{team}", use_container_width=True):
+                    st.session_state.equipo_seleccionado = team
+
+    return st.session_state.equipo_seleccionado
+
+# --- 4. LÓGICA PRINCIPAL (LO QUE ANTES ERA APP.PY) ---
+st.title("⚽ RCL Scout Group: Inteligencia Grupo 4")
+
+# Cargar datos
+try:
+    df = load_df()
+    logos = get_team_logos()
+
+    # Selector
+    equipo = team_selector(logos)
+
+    if equipo:
+        st.divider()
+        st.header(f"Análisis de {equipo}")
+        
+        # Filtrar datos por equipo
+        df_equipo = df[df['Equipo'] == equipo] if 'Equipo' in df.columns else df
+        st.dataframe(df_equipo)
+        
+except Exception as e:
+    st.error(f"Error al cargar los datos: {e}")
+    st.info("Asegúrate de que el archivo 'df.csv' esté en la carpeta 'data' de tu GitHub.")
 
 # --------------------------------------------------
 # CONFIG
@@ -191,3 +280,4 @@ st.dataframe(pd.DataFrame({
         df_j["Minutos"]
     ]
 }))
+
